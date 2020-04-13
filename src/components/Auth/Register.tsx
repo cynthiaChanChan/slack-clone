@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import md5 from "md5";
 import {
     Grid,
     Form,
@@ -23,6 +24,7 @@ type State = {
     passwordConfirmation: string;
     errors: Errors;
     loading: boolean;
+    usersRef: firebase.database.Reference;
 };
 
 class Register extends React.Component {
@@ -33,6 +35,7 @@ class Register extends React.Component {
         passwordConfirmation: "",
         errors: [],
         loading: false,
+        usersRef: firebase.database().ref("users"),
     };
 
     handleChange = ({
@@ -85,8 +88,19 @@ class Register extends React.Component {
             )
         );
 
+    saveUser = ({ user }: firebase.auth.UserCredential) => {
+        if (!user) {
+            return;
+        }
+        const { uid, displayName, photoURL } = user;
+        return this.state.usersRef.child(uid).set({
+            name: displayName,
+            avatar: photoURL,
+        });
+    };
+
     handleSubmit = async (event: types.FormEvent): Promise<void> => {
-        const { loading, email, password } = this.state;
+        const { loading, email, password, username } = this.state;
         event.preventDefault();
         if (loading || !this.isFormValid()) {
             return;
@@ -96,8 +110,20 @@ class Register extends React.Component {
             const createdUser = await firebase
                 .auth()
                 .createUserWithEmailAndPassword(email, password);
-            this.setState({ loading: false });
             console.log(createdUser);
+            try {
+                await createdUser.user?.updateProfile({
+                    displayName: username,
+                    photoURL: `https://www.gravatar.com/avatar/${md5(
+                        email
+                    )}?d=identicon`,
+                });
+                await this.saveUser(createdUser);
+                console.log("User saved.");
+                this.setState({ loading: false });
+            } catch (err) {
+                throw new Error(err.message);
+            }
         } catch (err) {
             this.setState({
                 loading: false,
@@ -108,7 +134,7 @@ class Register extends React.Component {
     };
 
     handleInputError = (errors: Errors, inputName: string): string => {
-        const result: boolean = errors.some((error): boolean =>
+        const result = errors.some((error): boolean =>
             error.message.toLowerCase().includes(inputName)
         );
         return result ? "error" : "";
