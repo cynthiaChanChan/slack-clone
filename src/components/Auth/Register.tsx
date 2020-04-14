@@ -156,7 +156,7 @@ class Register extends React.Component {
                 className="register app"
             >
                 <Grid.Column className="register__column">
-                    <Header as="h2" icon color="orange" textAlign="center">
+                    <Header as="h1" icon color="orange" textAlign="center">
                         <Icon name="puzzle piece" color="orange" />
                         Register for Slack Clone
                     </Header>
