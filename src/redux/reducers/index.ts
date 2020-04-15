@@ -1,6 +1,10 @@
 import { combineReducers } from "redux";
-import userReducer from "./user";
+import userReducer, { UserState } from "./user";
 
-export default combineReducers({
+export type StoreState = {
+    user: UserState;
+};
+
+export default combineReducers<StoreState>({
     user: userReducer,
 });

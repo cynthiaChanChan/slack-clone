@@ -11,12 +11,17 @@ import firebase from "../firebase";
 import Home from "./Home/Home";
 import Login from "./Auth/Login";
 import Register from "./Auth/Register";
+import Spinner from "./Spinner/Spinner";
 import { setUser } from "../redux/actions/user";
+import { StoreState } from "../redux/reducers";
 
 import "semantic-ui-css/semantic.min.css";
 import "../sass/app.scss";
 
-type AppProps = { setUser: typeof setUser } & RouteComponentProps;
+type AppProps = {
+    setUser: typeof setUser;
+    isLoading: boolean;
+} & RouteComponentProps;
 
 class App extends React.Component<AppProps> {
     componentDidMount() {
@@ -28,7 +33,9 @@ class App extends React.Component<AppProps> {
         });
     }
     render() {
-        return (
+        return this.props.isLoading ? (
+            <Spinner />
+        ) : (
             <Switch>
                 <Route exact path="/" component={Home} />
                 <Route path="/login" component={Login} />
@@ -38,4 +45,8 @@ class App extends React.Component<AppProps> {
     }
 }
 
-export default withRouter(connect(null, { setUser })(App));
+const mapStateToProps = ({ user }: StoreState) => ({
+    isLoading: user.isLoading,
+});
+
+export default withRouter(connect(mapStateToProps, { setUser })(App));
