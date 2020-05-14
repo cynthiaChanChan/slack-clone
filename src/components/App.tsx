@@ -12,7 +12,7 @@ import Home from "./Home/Home";
 import Login from "./Auth/Login";
 import Register from "./Auth/Register";
 import Spinner from "./Spinner/Spinner";
-import { setUser } from "../redux/actions/user";
+import { setUser, clearUser } from "../redux/actions/user";
 import { StoreState } from "../redux/reducers";
 
 import "semantic-ui-css/semantic.min.css";
@@ -20,6 +20,7 @@ import "../sass/app.scss";
 
 type AppProps = {
     setUser: typeof setUser;
+    clearUser: typeof clearUser;
     isLoading: boolean;
 } & RouteComponentProps;
 
@@ -29,6 +30,9 @@ class App extends React.Component<AppProps> {
             if (user) {
                 this.props.setUser(user);
                 this.props.history.push("/");
+            } else {
+                this.props.clearUser();
+                this.props.history.push("/login");
             }
         });
     }
@@ -49,4 +53,6 @@ const mapStateToProps = ({ user }: StoreState) => ({
     isLoading: user.isLoading,
 });
 
-export default withRouter(connect(mapStateToProps, { setUser })(App));
+export default withRouter(
+    connect(mapStateToProps, { setUser, clearUser })(App)
+);
