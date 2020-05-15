@@ -1,9 +1,16 @@
 import React from "react";
 import firebase from "../../firebase";
+import { connect } from "react-redux";
 
-import { Grid, Header, Icon, Dropdown } from "semantic-ui-react";
+import { Grid, Header, Icon, Dropdown, Image } from "semantic-ui-react";
+import { StoreState } from "../../redux/reducers";
+import { userInfo } from "os";
 
-class UserPanel extends React.Component {
+type UserPanelProps = {
+    currentUser: firebase.User | null;
+};
+
+class UserPanel extends React.Component<UserPanelProps> {
     handleSignout = async () => {
         await firebase.auth().signOut();
         console.log("signed out !");
@@ -13,7 +20,8 @@ class UserPanel extends React.Component {
             key: "user",
             text: (
                 <span>
-                    Signed in as <strong>User</strong>
+                    Signed in as{" "}
+                    <strong>{this.props.currentUser?.displayName}</strong>
                 </span>
             ),
             disabled: true,
@@ -25,6 +33,7 @@ class UserPanel extends React.Component {
         },
     ];
     render() {
+        const { currentUser } = this.props;
         return (
             <Grid className="user-panel">
                 <Grid.Column>
@@ -34,19 +43,32 @@ class UserPanel extends React.Component {
                             <Icon name="code" />
                             <Header.Content>DevChat</Header.Content>
                         </Header>
-                    </Grid.Row>
 
-                    {/* User Dropdown */}
-                    <Header className="dropdown-title" as="h4" inverted>
-                        <Dropdown
-                            trigger={<span>User</span>}
-                            options={this.dropdownOptions()}
-                        />
-                    </Header>
+                        {/* User Dropdown */}
+                        <Header className="dropdown-title" as="h4" inverted>
+                            <Dropdown
+                                trigger={
+                                    <span>
+                                        <Image
+                                            src={currentUser?.photoURL}
+                                            avatar
+                                            spaced="right"
+                                        />
+                                        {currentUser?.displayName}
+                                    </span>
+                                }
+                                options={this.dropdownOptions()}
+                            />
+                        </Header>
+                    </Grid.Row>
                 </Grid.Column>
             </Grid>
         );
     }
 }
 
-export default UserPanel;
+const mapStateToProps = (state: StoreState) => ({
+    currentUser: state.user.currentUser,
+});
+
+export default connect(mapStateToProps)(UserPanel);
