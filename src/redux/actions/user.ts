@@ -5,10 +5,6 @@ export type UserAction = {
     payload: firebase.User;
 };
 
-export type ClearUserAction = {
-    type: ActionTypes.ClEAR_USER;
-};
-
 export const setUser = (user: firebase.User) => {
     return {
         type: ActionTypes.SET_USER,
