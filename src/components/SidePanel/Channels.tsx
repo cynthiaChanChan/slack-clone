@@ -32,8 +32,7 @@ class Channels extends React.Component<ChannelsProps> {
     setFirstChannel = () => {
         const firstChannel = this.state.channels[0];
         if (this.state.firstLoad && firstChannel) {
-            this.props.setCurrentChannel(firstChannel);
-            this.setActiveChannel(firstChannel);
+            this.changeChannel(firstChannel);
             this.setState({
                 firstLoad: false,
             });
@@ -48,8 +47,16 @@ class Channels extends React.Component<ChannelsProps> {
         });
     };
 
+    removeListeners = () => {
+        this.state.channelsRef.off();
+    };
+
     componentDidMount() {
         this.addListeners();
+    }
+
+    componentWillUnmount() {
+        this.removeListeners();
     }
 
     setActiveChannel = (channel: Channel) => {
@@ -65,7 +72,8 @@ class Channels extends React.Component<ChannelsProps> {
 
     displayChannels = () => {
         const { channels, activeChannel } = this.state;
-        channels.length > 0 &&
+        return (
+            channels.length > 0 &&
             channels.map((channel: Channel) => (
                 <Menu.Item
                     key={channel.id}
@@ -76,7 +84,8 @@ class Channels extends React.Component<ChannelsProps> {
                 >
                     # {channel.name}
                 </Menu.Item>
-            ));
+            ))
+        );
     };
 
     handleModal = () => {
