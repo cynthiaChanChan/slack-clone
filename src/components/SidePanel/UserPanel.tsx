@@ -4,7 +4,6 @@ import { connect } from "react-redux";
 
 import { Grid, Header, Icon, Dropdown, Image } from "semantic-ui-react";
 import { StoreState } from "../../redux/reducers";
-import { userInfo } from "os";
 
 type UserPanelProps = {
     currentUser: firebase.User | null;

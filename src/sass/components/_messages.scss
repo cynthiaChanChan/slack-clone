@@ -7,4 +7,9 @@
         flex: 1;
         overflow-y: scroll;
     }
+
+    .message-self {
+        border-left: 2px solid orange;
+        padding-left: 8px;
+    }
 }
