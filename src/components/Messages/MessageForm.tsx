@@ -1,8 +1,10 @@
 import React from "react";
+import { v4 } from "uuid";
 import { Segment, Input, Button } from "semantic-ui-react";
 import { InputChangeEvent } from "../../type";
 import { Channel } from "../SidePanel/Channels";
 import firebase from "../../firebase";
+import FileModal from "./FileModal";
 
 type MessageFormProps = {
     messageRef: firebase.database.Reference;
@@ -17,22 +19,46 @@ export type MessageType = {
         name: string;
         avatar: string;
     };
-    content: string;
+    content?: string;
+    image?: string;
 };
 
-class MessageForm extends React.Component<MessageFormProps> {
-    state = {
-        message: "",
-        loading: false,
-        errors: [],
+type MessageFormState = {
+    storageRef: firebase.storage.Reference;
+    uploadTask: firebase.storage.UploadTask | null;
+    uploadState: string;
+    percentUploaded: number;
+    loading: boolean;
+    errors: { message: string }[];
+    modal: boolean;
+    fields: {
+        [key: string]: string;
     };
+};
+
+class MessageForm extends React.Component<MessageFormProps, MessageFormState> {
+    constructor(props: MessageFormProps) {
+        super(props);
+        this.state = {
+            storageRef: firebase.storage().ref(),
+            uploadTask: null,
+            uploadState: "",
+            percentUploaded: 0,
+            loading: false,
+            errors: [],
+            modal: false,
+            fields: {},
+        };
+    }
 
     handleChange = (event: InputChangeEvent) => {
         const { name, value } = event.target;
-        this.setState({ [name]: value });
+        const { fields } = this.state;
+        fields[name] = value;
+        this.setState({ fields });
     };
 
-    createMessage = () => {
+    createMessage = (fileUrl = "") => {
         const { currentUser } = this.props;
         const message: MessageType = {
             timestamp: firebase.database.ServerValue.TIMESTAMP,
@@ -41,16 +67,19 @@ class MessageForm extends React.Component<MessageFormProps> {
                 name: currentUser?.displayName || "",
                 avatar: currentUser?.photoURL || "",
             },
-            content: this.state.message,
         };
-
+        if (fileUrl !== "") {
+            message.image = fileUrl;
+        } else {
+            message.content = this.state.fields.message;
+        }
         return message;
     };
 
     sendMessage = async () => {
-        let { message, errors } = this.state;
+        let { fields, errors } = this.state;
         const { messageRef, currentChannel } = this.props;
-        message = message.trim();
+        const message = fields.message.trim();
         if (!message) {
             this.setState({
                 errors: [{ message: "Add a message" }],
@@ -71,7 +100,7 @@ class MessageForm extends React.Component<MessageFormProps> {
             this.setState({
                 loading: false,
                 errors: [],
-                message: "",
+                fields: { ...fields, message: "" },
             });
         } catch (err) {
             console.error(err.message);
@@ -82,8 +111,81 @@ class MessageForm extends React.Component<MessageFormProps> {
         }
     };
 
+    handleModal = () => {
+        const { modal } = this.state;
+        this.setState({ modal: !modal });
+    };
+
+    getFileExtention = (fileName: string) => {
+        const fileNameArr = fileName.split(".");
+        return fileNameArr[fileNameArr.length - 1];
+    };
+
+    uploadError = (err: { message: string }) => {
+        console.error(err);
+        this.setState({
+            errors: this.state.errors.concat(err),
+            uploadState: "error",
+            uploadTask: null,
+        });
+    };
+
+    sendFileMessage = async (fileUrl: string) => {
+        const { messageRef, currentChannel } = this.props;
+        if (!currentChannel) {
+            return;
+        }
+        const pathToUpload = currentChannel.id;
+
+        try {
+            await messageRef
+                .child(pathToUpload)
+                .push()
+                .set(this.createMessage(fileUrl));
+            this.setState({
+                uploadState: "done",
+            });
+        } catch (err) {
+            this.uploadError(err);
+        }
+    };
+
+    upLoadFile = (file: File, metadata: { contentType: string }) => {
+        const extention = this.getFileExtention(file.name);
+        const filePath = `chat/public/${v4()}.${extention}`;
+
+        this.setState(
+            {
+                uploadState: "uploading",
+                uploadTask: this.state.storageRef
+                    .child(filePath)
+                    .put(file, metadata),
+            },
+            () => {
+                this.state.uploadTask?.on(
+                    "state_changed",
+                    (snap) => {
+                        const { bytesTransferred, totalBytes } = snap;
+                        const percentUploaded =
+                            (bytesTransferred / totalBytes) * 100;
+                        this.setState({ percentUploaded });
+                    },
+                    this.uploadError,
+                    async () => {
+                        try {
+                            const downloadUrl = await this.state.uploadTask?.snapshot.ref.getDownloadURL();
+                            this.sendFileMessage(downloadUrl);
+                        } catch (err) {
+                            this.uploadError(err);
+                        }
+                    }
+                );
+            }
+        );
+    };
+
     render() {
-        const { loading, message, errors } = this.state;
+        const { loading, fields, errors, modal } = this.state;
         const errorClassName = errors.some((error: { message: string }) =>
             error.message.includes("message")
         )
@@ -97,7 +199,7 @@ class MessageForm extends React.Component<MessageFormProps> {
                     label={<Button icon="add" />}
                     labelPosition="left"
                     placeholder="Write your message"
-                    value={message}
+                    value={fields.message}
                     onChange={this.handleChange}
                     className={`${errorClassName} input`}
                 />
@@ -115,6 +217,12 @@ class MessageForm extends React.Component<MessageFormProps> {
                         content="Upload Media"
                         labelPosition="right"
                         icon="cloud upload"
+                        onClick={this.handleModal}
+                    />
+                    <FileModal
+                        modal={modal}
+                        handleModal={this.handleModal}
+                        upLoadFile={this.upLoadFile}
                     />
                 </Button.Group>
             </Segment>

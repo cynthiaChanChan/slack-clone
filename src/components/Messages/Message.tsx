@@ -1,7 +1,7 @@
 import React from "react";
 import moment from "moment";
 
-import { Comment } from "semantic-ui-react";
+import { Comment, Image } from "semantic-ui-react";
 import { MessageType } from "./MessageForm";
 
 type MessageProps = {
@@ -10,6 +10,9 @@ type MessageProps = {
 };
 
 const timeFromNow = (timestamp: Object) => moment(timestamp).fromNow();
+
+const isImage = (message: MessageType): boolean =>
+    message.hasOwnProperty("image") && !message.hasOwnProperty("content");
 
 const Message = ({ message, currentUser }: MessageProps) => (
     <Comment>
@@ -23,7 +26,11 @@ const Message = ({ message, currentUser }: MessageProps) => (
             <Comment.Metadata>
                 {timeFromNow(message.timestamp)}
             </Comment.Metadata>
-            <Comment.Text>{message.content}</Comment.Text>
+            {isImage(message) ? (
+                <Image src={message.image} className="message-image" />
+            ) : (
+                <Comment.Text>{message.content}</Comment.Text>
+            )}
         </Comment.Content>
     </Comment>
 );

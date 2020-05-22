@@ -1,4 +1,9 @@
-.message-form {
+.ui.message-form {
+    position: fixed;
+    z-index: 1000;
+    bottom: 1rem;
+    left: 334px;
+    right: 1rem;
     .input {
         margin-bottom: 0.7em;
     }
