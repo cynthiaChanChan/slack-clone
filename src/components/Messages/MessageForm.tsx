@@ -11,6 +11,7 @@ type MessageFormProps = {
     messageRef: firebase.database.Reference;
     currentUser: firebase.User | null;
     currentChannel: Channel | null;
+    isProgressBarVisible: () => void;
 };
 
 export type MessageType = {
@@ -132,7 +133,7 @@ class MessageForm extends React.Component<MessageFormProps, MessageFormState> {
     };
 
     sendFileMessage = async (fileUrl: string) => {
-        const { messageRef, currentChannel } = this.props;
+        const { messageRef, currentChannel, isProgressBarVisible } = this.props;
         if (!currentChannel) {
             return;
         }
@@ -146,6 +147,7 @@ class MessageForm extends React.Component<MessageFormProps, MessageFormState> {
             this.setState({
                 uploadState: "done",
             });
+            isProgressBarVisible();
         } catch (err) {
             this.uploadError(err);
         }
@@ -163,6 +165,7 @@ class MessageForm extends React.Component<MessageFormProps, MessageFormState> {
                     .put(file, metadata),
             },
             () => {
+                this.props.isProgressBarVisible();
                 this.state.uploadTask?.on(
                     "state_changed",
                     (snap) => {
@@ -223,6 +226,7 @@ class MessageForm extends React.Component<MessageFormProps, MessageFormState> {
                     />
                     <Button
                         color="teal"
+                        disabled={uploadState === "uploading"}
                         content="Upload Media"
                         labelPosition="right"
                         icon="cloud upload"

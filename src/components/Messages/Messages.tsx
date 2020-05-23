@@ -17,6 +17,20 @@ class Messages extends React.Component<MessagesProps> {
         messageRef: firebase.database().ref("messages"),
         loadedMessages: [],
         messagesLoading: true,
+        progressBar: false,
+        numUniqueUsers: "",
+    };
+
+    countUniqueUsers = (messages: MessageType[]) => {
+        const uniqueUsers = messages.reduce((acc: string[], message) => {
+            if (!acc.includes(message.user.id)) {
+                acc.push(message.user.id);
+            }
+            return acc;
+        }, []);
+        const plural = uniqueUsers.length !== 1;
+        const numUniqueUsers = `${uniqueUsers.length} user${plural ? "s" : ""}`;
+        this.setState({ numUniqueUsers });
     };
 
     addMessageListener = (channelId: string) => {
@@ -28,6 +42,7 @@ class Messages extends React.Component<MessagesProps> {
                 loadedMessages,
                 messagesLoading: false,
             });
+            this.countUniqueUsers(loadedMessages);
         });
     };
 
@@ -64,12 +79,24 @@ class Messages extends React.Component<MessagesProps> {
         ));
     };
 
+    isProgressBarVisible = () => {
+        this.setState({ progressBar: !this.state.progressBar });
+    };
+
+    displayChannelName = () => {
+        const { currentChannel } = this.props;
+        return currentChannel ? currentChannel.name : "";
+    };
+
     render() {
-        const { messageRef } = this.state;
+        const { messageRef, progressBar, numUniqueUsers } = this.state;
         const { currentUser, currentChannel } = this.props;
         return (
-            <div className="messages">
-                <MessagesHeader />
+            <div className={`${progressBar && "messages-progress"} messages`}>
+                <MessagesHeader
+                    channelName={this.displayChannelName()}
+                    numUniqueUsers={numUniqueUsers}
+                />
 
                 <Segment className="messages-box">
                     <Comment.Group>{this.displayMesssages()}</Comment.Group>
@@ -79,6 +106,7 @@ class Messages extends React.Component<MessagesProps> {
                     messageRef={messageRef}
                     currentUser={currentUser}
                     currentChannel={currentChannel}
+                    isProgressBarVisible={this.isProgressBarVisible}
                 />
             </div>
         );
