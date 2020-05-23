@@ -6,6 +6,7 @@ import firebase from "../../firebase";
 import MessagesHeader from "./MessagesHeader";
 import MessageForm, { MessageType } from "./MessageForm";
 import Message from "./Message";
+import { InputChangeEvent } from "../../type";
 
 type MessagesProps = {
     currentUser: firebase.User | null;
@@ -19,6 +20,9 @@ class Messages extends React.Component<MessagesProps> {
         messagesLoading: true,
         progressBar: false,
         numUniqueUsers: "",
+        searchTerm: "",
+        searchLoading: false,
+        searchResults: [],
     };
 
     countUniqueUsers = (messages: MessageType[]) => {
@@ -68,9 +72,10 @@ class Messages extends React.Component<MessagesProps> {
     }
 
     displayMesssages = () => {
-        const { loadedMessages } = this.state;
+        const { loadedMessages, searchResults, searchTerm } = this.state;
         const { currentUser } = this.props;
-        return loadedMessages.map((message: MessageType) => (
+        const messages = searchTerm ? searchResults : loadedMessages;
+        return messages.map((message: MessageType) => (
             <Message
                 key={message.timestamp.toString()}
                 message={message}
@@ -88,14 +93,53 @@ class Messages extends React.Component<MessagesProps> {
         return currentChannel ? currentChannel.name : "";
     };
 
+    handleSearchMessages = () => {
+        const { searchTerm, loadedMessages } = this.state;
+        const channelMessages: MessageType[] = [...loadedMessages];
+        const regex = new RegExp(searchTerm, "gi");
+        const searchResults = channelMessages.reduce(
+            (acc: MessageType[], message) => {
+                if (
+                    (message.content && message.content.match(regex)) ||
+                    message.user.name.match(regex)
+                ) {
+                    acc.push(message);
+                }
+                return acc;
+            },
+            []
+        );
+        this.setState({ searchResults });
+        setTimeout(() => {
+            this.setState({ searchLoading: false });
+        }, 1000);
+    };
+
+    handleSearchChange = (event: InputChangeEvent) => {
+        this.setState(
+            {
+                searchTerm: event.target.value,
+                searchLoading: true,
+            },
+            () => this.handleSearchMessages()
+        );
+    };
+
     render() {
-        const { messageRef, progressBar, numUniqueUsers } = this.state;
+        const {
+            messageRef,
+            progressBar,
+            numUniqueUsers,
+            searchLoading,
+        } = this.state;
         const { currentUser, currentChannel } = this.props;
         return (
             <div className={`${progressBar && "messages-progress"} messages`}>
                 <MessagesHeader
                     channelName={this.displayChannelName()}
                     numUniqueUsers={numUniqueUsers}
+                    handleSearchChange={this.handleSearchChange}
+                    searchLoading={searchLoading}
                 />
 
                 <Segment className="messages-box">
