@@ -5,6 +5,7 @@ import { InputChangeEvent } from "../../type";
 import { Channel } from "../SidePanel/Channels";
 import firebase from "../../firebase";
 import FileModal from "./FileModal";
+import ProgressBar from "./ProgressBar";
 
 type MessageFormProps = {
     messageRef: firebase.database.Reference;
@@ -166,8 +167,9 @@ class MessageForm extends React.Component<MessageFormProps, MessageFormState> {
                     "state_changed",
                     (snap) => {
                         const { bytesTransferred, totalBytes } = snap;
-                        const percentUploaded =
-                            (bytesTransferred / totalBytes) * 100;
+                        const percentUploaded = Math.round(
+                            (bytesTransferred / totalBytes) * 100
+                        );
                         this.setState({ percentUploaded });
                     },
                     this.uploadError,
@@ -185,7 +187,14 @@ class MessageForm extends React.Component<MessageFormProps, MessageFormState> {
     };
 
     render() {
-        const { loading, fields, errors, modal } = this.state;
+        const {
+            loading,
+            fields,
+            errors,
+            modal,
+            uploadState,
+            percentUploaded,
+        } = this.state;
         const errorClassName = errors.some((error: { message: string }) =>
             error.message.includes("message")
         )
@@ -219,12 +228,16 @@ class MessageForm extends React.Component<MessageFormProps, MessageFormState> {
                         icon="cloud upload"
                         onClick={this.handleModal}
                     />
-                    <FileModal
-                        modal={modal}
-                        handleModal={this.handleModal}
-                        upLoadFile={this.upLoadFile}
-                    />
                 </Button.Group>
+                <ProgressBar
+                    uploadState={uploadState}
+                    percentUploaded={percentUploaded}
+                />
+                <FileModal
+                    modal={modal}
+                    handleModal={this.handleModal}
+                    upLoadFile={this.upLoadFile}
+                />
             </Segment>
         );
     }
