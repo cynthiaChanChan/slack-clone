@@ -12,6 +12,7 @@ type MessageFormProps = {
     currentUser: firebase.User | null;
     currentChannel: Channel | null;
     isProgressBarVisible: () => void;
+    isPrivateChannel: boolean | Channel;
 };
 
 export type MessageType = {
@@ -153,9 +154,18 @@ class MessageForm extends React.Component<MessageFormProps, MessageFormState> {
         }
     };
 
+    getPath = () => {
+        const { currentChannel } = this.props;
+        if (this.props.isPrivateChannel) {
+            return `{chat/private-${currentChannel?.id}}`;
+        } else {
+            return "chat/public";
+        }
+    };
+
     upLoadFile = (file: File, metadata: { contentType: string }) => {
         const extention = this.getFileExtention(file.name);
-        const filePath = `chat/public/${v4()}.${extention}`;
+        const filePath = `${this.getPath()}/${v4()}.${extention}`;
 
         this.setState(
             {

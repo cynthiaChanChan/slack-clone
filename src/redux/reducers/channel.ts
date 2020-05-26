@@ -4,10 +4,12 @@ import { ChannelAction } from "../actions/channel";
 
 export type ChannelState = {
     currentChannel: Channel | null;
+    isPrivateChannel: Channel | boolean;
 };
 
 const initialUserState: ChannelState = {
     currentChannel: null,
+    isPrivateChannel: false,
 };
 
 const channelReducer = (state = initialUserState, action: ChannelAction) => {
@@ -16,6 +18,12 @@ const channelReducer = (state = initialUserState, action: ChannelAction) => {
             return {
                 ...state,
                 currentChannel: action.payload,
+                isPrivateChannel: false,
+            };
+        case ActionTypes.SET_PRIVATE_CHANNEL:
+            return {
+                ...state,
+                isPrivateChannel: action.payload,
             };
 
         default:

@@ -3,9 +3,15 @@ import { Menu, Icon } from "semantic-ui-react";
 import { StoreState } from "../../redux/reducers";
 import { connect } from "react-redux";
 import firebase from "../../firebase";
+import {
+    setCurrentChannel,
+    setPrivateChannel,
+} from "../../redux/actions/channel";
 
 type DirectMessagesProps = {
     currentUser: firebase.User | null;
+    setCurrentChannel: typeof setCurrentChannel;
+    setPrivateChannel: typeof setPrivateChannel;
 };
 
 type User = {
@@ -81,6 +87,23 @@ class DirectMessages extends React.Component<DirectMessagesProps> {
 
     isUserOnline = (user: User) => user.status === "online";
 
+    getChannelId = (userId: string) => {
+        const currentUserUid = this.state.currentUser?.uid;
+        return currentUserUid && userId < currentUserUid
+            ? `${userId}/${currentUserUid}`
+            : `${currentUserUid}/${userId}`;
+    };
+
+    changeChannel = (user: User) => {
+        const channelId = this.getChannelId(user.uid);
+        const channelData = {
+            id: channelId,
+            name: user.name,
+        };
+        this.props.setCurrentChannel(channelData);
+        this.props.setPrivateChannel(true);
+    };
+
     render() {
         const { users } = this.state;
 
@@ -93,7 +116,13 @@ class DirectMessages extends React.Component<DirectMessagesProps> {
                     ({users.length})
                 </Menu.Item>
                 {users.map((user: User) => (
-                    <Menu.Item key={user.uid} className="message-user">
+                    <Menu.Item
+                        key={user.uid}
+                        className="message-user"
+                        onClick={() => {
+                            this.changeChannel(user);
+                        }}
+                    >
                         <Icon
                             name="circle"
                             color={this.isUserOnline(user) ? "green" : "red"}
@@ -110,4 +139,7 @@ const mapPropsToState = (state: StoreState) => ({
     currentUser: state.user.currentUser,
 });
 
-export default connect(mapPropsToState)(DirectMessages);
+export default connect(mapPropsToState, {
+    setCurrentChannel,
+    setPrivateChannel,
+})(DirectMessages);
